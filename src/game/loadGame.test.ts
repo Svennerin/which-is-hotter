@@ -31,7 +31,8 @@ const NO_PAIRS = [20, 20, 20, 20, 20, 20, 20, 20]
 
 describe('buildGame', () => {
   it('needs one request when the first batch is good enough', async () => {
-    // Make ten pairs possible by using the real city list with many cities.
+    // 40 cities spread around one parallel, with temperatures cycling through four
+    // values: plenty of far-apart pairs with a valid gap, so ten pairs are easy.
     const many: City[] = Array.from({ length: 40 }, (_, i) => ({
       id: `m${i}`,
       name: `M${i}`,
@@ -40,8 +41,6 @@ describe('buildGame', () => {
       lon: -180 + i * 9,
       region: i % 2 === 0 ? 'Europe' : 'Asia',
     }))
-    // Adjacent-in-list cities are only 9° (~760 km) apart, so alternate temps
-    // by index mod 4 and rely on distance filtering plus plenty of choice.
     const fetchPool = vi.fn(async (requested: readonly City[]) =>
       requested.map((city, i) => ({
         city,

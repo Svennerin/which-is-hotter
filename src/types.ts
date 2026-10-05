@@ -56,4 +56,4 @@ export interface GuessResult {
 export type AppView =
   | { name: 'home' }
   | { name: 'game'; gameId: number }
-  | { name: 'results'; rounds: Round[]; results: GuessResult[] }
+  | { name: 'results'; rounds: readonly Round[]; results: readonly GuessResult[] }

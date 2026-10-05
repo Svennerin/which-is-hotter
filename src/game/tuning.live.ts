@@ -6,11 +6,11 @@
 import { describe, it } from 'vitest'
 import { fetchCurrentWeather } from '../api/openMeteo'
 import { CITIES } from '../data/cities'
-import { GAME_CONFIG, RELAXED_RULES, STRICT_RULES } from './config'
+import { DISTANCE_VARIETY, GAME_CONFIG, RELAXED_RULES, STRICT_RULES } from './config'
 import { distanceKm, selectPairs } from './pairing'
 import { sample } from './random'
 
-const TRIALS = 12
+const TRIALS = 6
 
 describe('pairing thresholds against live weather', () => {
   it('reports success rate and round difficulty', async () => {
@@ -19,6 +19,7 @@ describe('pairing thresholds against live weather', () => {
     const gaps: number[] = []
     const distances: number[] = []
     let crossRegion = 0
+    const bands = [0, 0, 0] // near | mid | far, see DISTANCE_VARIETY
     let totalPairs = 0
     let example = ''
 
@@ -34,6 +35,7 @@ describe('pairing thresholds against live weather', () => {
       for (const { a, b } of strict) {
         gaps.push(Math.abs(a.temperatureC - b.temperatureC))
         distances.push(distanceKm(a, b))
+        bands[DISTANCE_VARIETY.bandEdgesKm.filter((edge) => distanceKm(a, b) >= edge).length]++
         totalPairs++
         if (a.city.region !== b.city.region) crossRegion++
       }
@@ -52,6 +54,7 @@ describe('pairing thresholds against live weather', () => {
     console.log(`Strict pairs per pool:  ${strictCounts.join(' ')}  (full games: ${strictCounts.filter((n) => n >= 10).length}/${TRIALS})`)
     console.log(`Relaxed pairs per pool: ${relaxedCounts.join(' ')}`)
     console.log(`Mean gap ${avg(gaps)}°C, mean distance ${avg(distances)} km, cross-continent ${crossRegion}/${totalPairs}`)
+    console.log(`Distance bands (near <${DISTANCE_VARIETY.bandEdgesKm[0]} km | mid | far >${DISTANCE_VARIETY.bandEdgesKm[1]} km): ${bands.join(' | ')}`)
     console.log(`Example game:\n  ${example}`)
   }, 300_000)
 })

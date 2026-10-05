@@ -38,12 +38,25 @@ export const RELAXED_RULES: PairRules = {
   maxLatitudeDiffDeg: 50,
 }
 
-/** Scoring weights for choosing among valid pairs (see pairing.ts). */
+/** Scoring weights for ordering valid pairs (see pairing.ts). */
 export const PAIR_SCORE = {
-  /** Bonus when the two cities are on different continents. */
-  differentRegion: 1,
-  /** Distance is rewarded up to this cap; beyond it the map just zooms out. */
-  distanceCapKm: 9000,
+  /**
+   * Small nudge towards different continents. Kept modest on purpose: when
+   * this and distance were large, every pair came out intercontinental and
+   * the map was always zoomed all the way out.
+   */
+  differentRegion: 0.25,
   /** Random jitter so repeat games over the same data still differ. */
   jitter: 1,
+} as const
+
+/**
+ * Keeps a game visually varied. Pairs are grouped by distance and each group is
+ * capped, so a single game mixes tightly zoomed regional maps with
+ * world-spanning ones. Edges are in km: [near | mid | far].
+ */
+export const DISTANCE_VARIETY = {
+  bandEdgesKm: [5000, 10000],
+  /** Max pairs per band (near, mid, far). Filled nearest-first; ignored only if the pool is short. */
+  maxPerBand: [3, 4, 4],
 } as const

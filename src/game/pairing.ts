@@ -1,6 +1,6 @@
 import { geoDistance } from 'd3-geo'
 import type { CityPair, CityWeather, Round } from '../types'
-import { PAIR_SCORE, type PairRules } from './config'
+import { DISTANCE_VARIETY, PAIR_SCORE, type PairRules } from './config'
 import { shuffle, type Rng } from './random'
 
 const EARTH_RADIUS_KM = 6371
@@ -30,21 +30,28 @@ export function isValidPair(a: CityWeather, b: CityWeather, rules: PairRules): b
 }
 
 /**
- * Higher is better. Rewards what makes a round fun to look at (cities on
- * different continents, far enough apart to show a varied map) and adds jitter
- * so two games over similar data do not produce identical rounds.
+ * Higher is better. Mostly random (so games differ), with a small nudge toward
+ * pairs on different continents. Distance is deliberately NOT rewarded here:
+ * that made every pair a world apart. Variety is handled by distance bands in
+ * selectPairs instead.
  */
 function scorePair(a: CityWeather, b: CityWeather, rng: Rng): number {
   const regionBonus = a.city.region !== b.city.region ? PAIR_SCORE.differentRegion : 0
-  const distanceBonus = Math.min(distanceKm(a, b), PAIR_SCORE.distanceCapKm) / PAIR_SCORE.distanceCapKm
-  return regionBonus + distanceBonus + rng() * PAIR_SCORE.jitter
+  return regionBonus + rng() * PAIR_SCORE.jitter
+}
+
+/** 0 = near, 1 = mid, 2 = far, according to DISTANCE_VARIETY. */
+function distanceBand(a: CityWeather, b: CityWeather): number {
+  const km = distanceKm(a, b)
+  return DISTANCE_VARIETY.bandEdgesKm.filter((edge) => km >= edge).length
 }
 
 /**
  * Picks up to `count` valid pairs where no city appears twice.
  *
  * Greedy on purpose: score every valid pair, then repeatedly take the best one
- * whose cities are both still unused. It is not guaranteed to find the maximum
+ * whose cities are both still unused (and whose distance band is not full, see
+ * DISTANCE_VARIETY). It is not guaranteed to find the maximum
  * possible number of pairs, but with a ~70-city pool it reliably finds 10, and
  * it is far easier to read than a matching algorithm. If it ever comes up
  * short, the caller relaxes the rules (see loadGame.ts).
@@ -67,16 +74,27 @@ export function selectPairs(
 
   const used = new Set<string>()
   const chosen: CityPair[] = []
-  for (const { pair } of candidates) {
-    if (chosen.length === count) break
-    if (used.has(pair.a.city.id) || used.has(pair.b.city.id)) continue
-    used.add(pair.a.city.id)
-    used.add(pair.b.city.id)
-    chosen.push(pair)
+  const perBand = DISTANCE_VARIETY.maxPerBand.map(() => 0)
+
+  // Fill the nearest band first (up to its cap), then the next, and so on, so
+  // the tightly zoomed regional maps are used whenever the pool has them: far
+  // pairs are plentiful and would otherwise crowd them out. A final pass
+  // ignores the caps, so a pool that cannot satisfy them still fills the game.
+  const passes: (number | 'any')[] = [0, 1, 2, 'any']
+  for (const pass of passes) {
+    for (const { pair } of candidates) {
+      if (chosen.length === count) break
+      if (used.has(pair.a.city.id) || used.has(pair.b.city.id)) continue
+      const band = distanceBand(pair.a, pair.b)
+      if (pass !== 'any' && (band !== pass || perBand[band] >= DISTANCE_VARIETY.maxPerBand[band])) continue
+      used.add(pair.a.city.id)
+      used.add(pair.b.city.id)
+      perBand[band]++
+      chosen.push(pair)
+    }
   }
 
-  // Selection order is by score, so shuffle to avoid the "best" rounds always
-  // coming first.
+  // Pairs were picked in score order; shuffle so rounds are not ordered by it.
   return shuffle(chosen, rng)
 }
 

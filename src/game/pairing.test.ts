@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CITIES } from '../data/cities'
 import type { CityWeather } from '../types'
-import { RELAXED_RULES, STRICT_RULES, type PairRules } from './config'
+import { DISTANCE_VARIETY, RELAXED_RULES, STRICT_RULES, type PairRules } from './config'
 import { distanceKm, hotterSide, isValidPair, selectPairs, toRound } from './pairing'
 import { sample, seededRng } from './random'
 import { makeCity } from './testUtils'
@@ -121,6 +121,28 @@ describe('selectPairs', () => {
     const noJitter = () => 0
     const pairs = selectPairs(pool, { ...STRICT_RULES, maxGapC: 10 }, 2, noJitter)
     for (const { a, b } of pairs) expect(a.city.region).not.toBe(b.city.region)
+  })
+
+  it('mixes near and far maps instead of picking only the most distant pairs', () => {
+    const { bandEdgesKm, maxPerBand } = DISTANCE_VARIETY
+    for (let seed = 1; seed <= 25; seed++) {
+      const pairs = selectPairs(fakePool(seed), STRICT_RULES, 10, seededRng(seed))
+      const bands = [0, 0, 0]
+      for (const { a, b } of pairs) {
+        bands[bandEdgesKm.filter((edge) => distanceKm(a, b) >= edge).length]++
+      }
+      // Caps hold whenever the pool had enough pairs to respect them.
+      expect(bands[2]).toBeLessThanOrEqual(maxPerBand[2])
+      // At least some rounds are regional, so the map zooms in.
+      expect(bands[0] + bands[1]).toBeGreaterThanOrEqual(6)
+    }
+  })
+
+  it('fills the game past the band caps when the pool offers nothing else', () => {
+    // Six cities on one parallel, far apart: only "far" pairs are possible.
+    const pool = [0, 60, 120, 180, -120, -60].map((lon, i) => makeCity(`f${i}`, 20 + (i % 2) * 3, 10, lon))
+    const pairs = selectPairs(pool, { ...STRICT_RULES, maxGapC: 3 }, 3, seededRng(1))
+    expect(pairs).toHaveLength(3)
   })
 
   it('still finds pairs under the relaxed rules when strict ones are scarce', () => {
