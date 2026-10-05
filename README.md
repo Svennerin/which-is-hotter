@@ -2,7 +2,7 @@
 
 A geography-and-weather guessing game. Each round shows two cities on a world map and you pick the one that is hotter **right now**. The map shades the night side of the planet from the real position of the sun, then the reveal shows both live temperatures and whether each city is in day or night. Ten rounds, then a score.
 
-**Live demo:** _add the Vercel URL here after deploying_
+**Live demo:** https://which-is-hotter.vercel.app/
 
 ![A round: Dublin vs Ankara on a regional map](docs/screenshots/game-desktop.png)
 
@@ -123,7 +123,7 @@ playwright/             map QA matrix, game flow, accessibility, live smoke test
 
 ## Deploying to Vercel
 
-Everything except the Open-Meteo request is bundled, there are no secrets and no environment variables, and no rewrite rules are needed (there is no router). Import the repository into Vercel and accept the detected Vite defaults (build `npm run build`, output `dist`). After deploying, run `LIVE_URL=https://<your-app>.vercel.app npx playwright test --project=live live.spec.ts` to check the production site loads the map and reaches the weather API.
+Everything except the Open-Meteo request is bundled, there are no secrets and no environment variables, and no rewrite rules are needed (there is no router). Import the repository into Vercel and accept the detected Vite defaults (build `npm run build`, output `dist`). After deploying, run `LIVE_URL=https://which-is-hotter.vercel.app npx playwright test --project=live live.spec.ts` to check the production site loads the map and reaches the weather API.
 
 ## v2 ideas
 
