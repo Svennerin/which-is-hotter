@@ -1,0 +1,40 @@
+@import 'tailwindcss';
+
+/*
+ * Palette. Map colours are theme tokens so SVG elements can use them through
+ * Tailwind classes (fill-map-ocean, stroke-map-border, ...) and the whole map
+ * can be restyled from this one block.
+ *
+ * Land is pale and the ocean muted so the night overlay and the two markers
+ * stand out. The markers differ in colour AND shape AND letter, so colour is
+ * never the only cue.
+ */
+@theme {
+  --color-map-ocean: #a7c4d6;
+  --color-map-land: #f4f0e6;
+  --color-map-coast: #b9ad94;
+  --color-map-border: #7d8696;
+  --color-map-graticule: #ffffff;
+  --color-map-night: #0a1838;
+  --color-marker-a: #c2410c;
+  --color-marker-b: #1d4ed8;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-family: var(--font-sans);
+}
+
+/* Keyboard focus must be obvious everywhere, not only on buttons we style. */
+:focus-visible {
+  outline: 3px solid #0f172a;
+  outline-offset: 2px;
+}
